@@ -1,0 +1,76 @@
+@startuml Modèle de données pour l'analyse des pandémies
+
+' Définition des couleurs et styles
+skinparam class {
+  BackgroundColor LightBlue
+  ArrowColor DeepSkyBlue
+  BorderColor DarkBlue
+}
+
+skinparam stereotypeCBackgroundColor YellowGreen
+skinparam stereotypeCBorderColor DarkGreen
+
+' Définition des classes
+class Pandemic <<Dimension>> {
+  +pandemic_id: int <<PK>>
+  +pandemic_name: string
+}
+
+class Location <<Dimension>> {
+  +location_id: int <<PK>>
+  +location_name: string
+  +iso_code: string
+  +continent: string
+  +population: bigint
+}
+
+class Date <<Dimension>> {
+  +date_id: int <<PK>>
+  +full_date: date
+}
+
+class PandemicStats <<Fact>> {
+  +stat_id: int <<PK>>
+  +pandemic_id: int <<FK>>
+  +location_id: int <<FK>>
+  +date_id: int <<FK>>
+  +total_cases: decimal
+  +new_cases: decimal
+  +total_deaths: decimal
+  +new_deaths: decimal
+  +total_recovered: decimal
+  +active_cases: decimal
+  +serious_or_critical: decimal
+  +cases_per_million: decimal
+  +deaths_per_million: decimal
+  +total_tests: decimal
+  +tests_per_million: decimal
+}
+
+' Définition des relations
+Pandemic "1" -- "many" PandemicStats : a >
+Location "1" -- "many" PandemicStats : recorded in >
+Date "1" -- "many" PandemicStats : occurred on >
+
+' Notes explicatives
+note bottom of Pandemic
+  Représente les différentes pandémies
+  (COVID-19, MPOX, etc.)
+end note
+
+note bottom of Location
+  Contient les informations géographiques
+  et démographiques des pays/régions
+end note
+
+note bottom of Date
+  Dimension temporelle pour
+  l'analyse des données
+end note
+
+note bottom of PandemicStats
+  Table de faits contenant toutes
+  les métriques des pandémies
+end note
+
+@enduml 
