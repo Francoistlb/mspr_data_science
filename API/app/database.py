@@ -8,7 +8,7 @@ load_dotenv()
 
 # URL de connexion PostgreSQL (modifie selon ta config)
 DATABASE_URL = os.getenv("DATABASE_URL")
-
+print(DATABASE_URL)
 # Vérifier si DATABASE_URL est bien chargé
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL n'est pas défini dans le fichier .env")
