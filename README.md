@@ -97,10 +97,11 @@ Le dashboard interactif comprend trois onglets:
 ## Structure du projet
 
 - `etl_script.py`: Script d'extraction, transformation et chargement des données
-- `dashboard.py`: Application Dash pour le dashboard interactif
-- `start_analysis.py`: Script principal pour démarrer l'analyse complète
-- `requirements.txt`: Liste des dépendances
-- `data/`: Dossier contenant les données brutes et transformées (créé automatiquement)
+- `dashboard.py`: Interface utilisateur interactive
+- `start_analysis.py`: Script principal qui orchestre l'ensemble du processus
+- `requirements.txt`: Liste des dépendances Python
+- `data/`: Dossier contenant les données brutes et transformées
+- `visualizations/`: Dossier contenant les graphiques générés
 
 ## Remarques
 
