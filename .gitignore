@@ -1,0 +1,12 @@
+# Fichiers Python
+__pycache__/
+*.pyc
+
+# Environnement virtuel
+venv/
+
+# Dotenv
+.env
+
+# VSCode config
+.vscode/
