@@ -86,3 +86,15 @@ Documentation API :
 - Les opérations CRUD sont dans `app/crud/`
 - Les routes API sont dans `app/api/endpoints/`
 - La configuration est dans `app/core/` 
+
+
+
+## Création de la bdd :
+
+1. Au préalable, avoir psql d'installer (passer par pgadmin sous windows)
+
+2. Lancer les scripts dans la racine du projet, lancer l'env puis
+```bash
+ python -m backend.app.create_database
+ python -m backend.app.init_db
+```
