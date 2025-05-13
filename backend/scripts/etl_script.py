@@ -13,7 +13,7 @@ if not os.path.exists('data'):
 
 # URLs des données (sources publiques pour COVID-19 et mpox)
 COVID_DATA_URL = "https://covid.ourworldindata.org/data/owid-covid-data.csv"
-MPOX_DATA_URL = "https://7rydd2v2ra.execute-api.eu-central-1.amazonaws.com/web/"
+MPOX_DATA_URL = "https://7rydd2v2ra.execute-api.eu-central-1.amazonaws.com/web/lastest.csv"
 
 def download_data(url, filename):
     """Télécharger les données à partir de l'URL spécifiée"""

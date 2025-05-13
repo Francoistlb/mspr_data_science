@@ -6,63 +6,147 @@ Ce projet permet d'extraire, transformer, charger et visualiser les données mon
 
 - Téléchargement automatique des données depuis des sources fiables
 - Nettoyage et transformation des données
+- Stockage des données dans une base PostgreSQL
 - Génération de visualisations comparatives
 - Dashboard interactif pour explorer les données
+- API REST pour accéder aux données
 - Comparaison des tendances entre COVID-19 et Mpox
+
+## Structure du projet
+
+```
+mspr_data_science/
+│
+├── backend/                # API et gestion des données
+│   ├── app/
+│   │   ├── main.py        # Point d'entrée FastAPI
+│   │   ├── models/        # Modèles SQLAlchemy
+│   │   ├── schemas/       # Schémas Pydantic
+│   │   ├── crud/         # Opérations CRUD
+│   │   ├── api/          # Routes API
+│   │   └── core/         # Configuration
+│   │
+│   ├── scripts/          # Scripts utilitaires
+│   │   ├── import_db.py  # Import des données
+│   │   ├── etl_script.py # Scripts ETL
+│   │   └── dashboard.py  # Dashboard Plotly
+│   │
+│   ├── data/            # Données source
+│   │   └── covid_processed.csv
+│   │
+│   └── requirements.txt  # Dépendances Python
+│
+└── README.md            # Documentation
+```
 
 ## Prérequis
 
-- Python 3.6 ou supérieur
-- Les bibliothèques suivantes:
-  - pandas
-  - numpy
-  - matplotlib
-  - seaborn
-  - requests
-  - dash
-  - plotly
+- Python 3.8 ou supérieur
+- PostgreSQL
+- pip (gestionnaire de paquets Python)
 
 ## Installation
 
-1. Clonez ce dépôt sur votre machine locale
-2. Installez les dépendances:
-
+1. Cloner le projet
+```bash
+git clone https://github.com/Francoistlb/mspr_data_science.git
+cd mspr_data_science
 ```
+
+2. Configuration de l'environnement backend
+```bash
+cd backend
+python -m venv venv
+.\venv\Scripts\activate  # Windows
+source venv/bin/activate # Linux/MacOS
 pip install -r requirements.txt
+```
+
+3. Configuration de la base de données
+- Créer un fichier `.env` dans le dossier backend :
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/mspr_db
+```
+
+## Préparation des données (ETL)
+
+1. Exécuter le processus ETL pour télécharger et transformer les données :
+```bash
+python run.py etl
+python run.py analisys
+```
+
+Cette étape va :
+- Télécharger les données brutes COVID-19 et Mpox
+- Nettoyer et transformer les données
+- Générer les fichiers CSV traités dans le dossier `data/`
+
+## Mise en place de la base de données
+
+1. Installer PostgreSQL et pgAdmin (sous Windows)
+
+2. Créer et initialiser la base de données :
+```bash
+/mspr_data_science
+python -m backend.app.create_database
+python -m backend.app.init_db
+```
+
+3. Importer les données préparées :
+```bash
+python run.py import
 ```
 
 ## Utilisation
 
-### Option 1: Script de démarrage complet
+Le projet propose plusieurs modes d'utilisation via le script `run.py` :
 
-Pour démarrer l'analyse complète (ETL + dashboard), exécutez:
-
-```
-python start_analysis.py
+```bash
+python run.py [commande]
 ```
 
-Le script va:
-1. Vérifier si les données existent, sinon les télécharger et les transformer
-2. Lancer le dashboard interactif accessible à l'adresse http://127.0.0.1:8050/
+Commandes disponibles :
+- `etl` : Exécution des scripts ETL (préparation des données)
+- `import` : Import des données préparées dans la base
+- `dashboard` : Lancement du dashboard Plotly
+- `start_analysis` : Démarrage de l'analyse des données
 
-### Option 2: Exécution des composants individuellement
+### API Backend
 
-Pour exécuter seulement le processus ETL:
-
+Pour lancer l'API :
+```bash
+cd backend
+uvicorn app.main:app --reload
 ```
-python etl_script.py
-```
 
-Pour lancer seulement le dashboard (après avoir exécuté l'ETL):
+L'API sera accessible à :
+- Interface : http://localhost:8000
+- Documentation Swagger : http://localhost:8000/docs
+- Documentation ReDoc : http://localhost:8000/redoc
 
-```
-python dashboard.py
-```
+### Dashboard
+
+Le dashboard interactif comprend trois onglets :
+
+1. **COVID-19**
+   - Évolution temporelle des cas/décès/hospitalisations
+   - Comparaison entre pays
+   - Filtres par pays, métrique et plage de dates
+
+2. **Mpox**
+   - Distribution mondiale des cas (carte)
+   - Comparaison entre pays
+   - Filtres par pays
+
+3. **Comparaison**
+   - Tendances temporelles
+   - Échelle logarithmique pour comparer les deux maladies
+   - Filtres par pays
 
 ## Structure des données
 
 ### COVID-19
-Les données COVID-19 proviennent de "Our World in Data" et contiennent:
+Les données proviennent de "Our World in Data" et contiennent :
 - Nombre total de cas par pays
 - Nouveaux cas quotidiens
 - Décès totaux et nouveaux
@@ -70,38 +154,18 @@ Les données COVID-19 proviennent de "Our World in Data" et contiennent:
 - Données sur la vaccination
 
 ### Mpox
-Les données Mpox proviennent du projet Global.health et contiennent:
+Les données proviennent du projet Global.health et contiennent :
 - Cas confirmés par pays
 - Dates de confirmation
 - Distribution géographique
 
-## Dashboard interactif
+## Développement
 
-Le dashboard interactif comprend trois onglets:
-
-1. **COVID-19**: Visualisation des données COVID-19 avec:
-   - Évolution temporelle des cas/décès/hospitalisations
-   - Comparaison entre pays
-   - Filtres par pays, métrique et plage de dates
-
-2. **Mpox**: Visualisation des données Mpox avec:
-   - Distribution mondiale des cas (carte)
-   - Comparaison entre pays
-   - Filtres par pays
-
-3. **Comparaison**: Analyse comparative entre COVID-19 et Mpox:
-   - Tendances temporelles
-   - Échelle logarithmique pour comparer les deux maladies
-   - Filtres par pays
-
-## Structure du projet
-
-- `etl_script.py`: Script d'extraction, transformation et chargement des données
-- `dashboard.py`: Interface utilisateur interactive
-- `start_analysis.py`: Script principal qui orchestre l'ensemble du processus
-- `requirements.txt`: Liste des dépendances Python
-- `data/`: Dossier contenant les données brutes et transformées
-- `visualizations/`: Dossier contenant les graphiques générés
+- Les modèles de données sont dans `backend/app/models/`
+- Les schémas Pydantic sont dans `backend/app/schemas/`
+- Les opérations CRUD sont dans `backend/app/crud/`
+- Les routes API sont dans `backend/app/api/endpoints/`
+- La configuration est dans `backend/app/core/`
 
 ## Remarques
 
