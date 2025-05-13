@@ -5,7 +5,7 @@ from app.core.database import engine
 dfc = pd.read_csv('data/covid_processed.csv')
 dfm = pd.read_csv('data/mpox_processed.csv')
 
-dfc.to_sql()
+dfc.to_sql('')
 
 
 
