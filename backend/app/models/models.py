@@ -1,22 +1,7 @@
 from sqlalchemy import (
-    Column, Integer, String, Date, DateTime, Boolean, Numeric, ForeignKey, func
+    Column, Integer, String, Date, DateTime, Numeric, ForeignKey, func
 )
 from backend.app.core.database import Base
-
-class DDate(Base):
-    """Dimension temporelle pour stocker les dates uniques"""
-    __tablename__ = 'd_date'
-    
-    date_id = Column(Integer, primary_key=True)
-    full_date = Column(Date, nullable=False, unique=True)  # Date complète pour jointure
-    day = Column(Integer)
-    month = Column(Integer)
-    year = Column(Integer)
-    
-    # Champs optionnels utiles pour l'analyse
-    quarter = Column(Integer)
-    week_of_year = Column(Integer)
-    is_weekend = Column(Boolean)
 
 class DLocation(Base):
     """Dimension géographique pour stocker les localisations uniques"""
@@ -30,7 +15,7 @@ class FCovid(Base):
     __tablename__ = 'f_covid'
     
     covid_fact_id = Column(Integer, primary_key=True)
-    date_id = Column(Integer, ForeignKey('d_date.date_id'), nullable=False)
+    date = Column(Date, nullable=False)  # Format: YYYY-MM-DD
     location_id = Column(Integer, ForeignKey('d_location.location_id'), nullable=False)
     
     # Métriques de cas et décès

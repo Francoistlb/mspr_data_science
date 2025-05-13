@@ -2,24 +2,6 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import date, datetime
 
-# ----------- d_date -----------
-class DDateBase(BaseModel):
-    full_date: date
-    day: Optional[int]
-    month: Optional[int]
-    year: Optional[int]
-    quarter: Optional[int]
-    week_of_year: Optional[int]
-    is_weekend: Optional[bool]
-
-class DDateCreate(DDateBase):
-    pass
-
-class DDateRead(DDateBase):
-    date_id: int
-    class Config:
-        orm_mode = True
-
 # ----------- d_location -----------
 class DLocationBase(BaseModel):
     location_name: str
@@ -34,7 +16,7 @@ class DLocationRead(DLocationBase):
 
 # ----------- f_covid -----------
 class FCovidBase(BaseModel):
-    date_id: int
+    date: date
     location_id: int
     total_cases: Optional[float]
     new_cases: Optional[float]
