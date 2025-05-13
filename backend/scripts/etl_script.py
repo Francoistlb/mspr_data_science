@@ -13,7 +13,7 @@ if not os.path.exists('data'):
 
 # URLs des données (sources publiques pour COVID-19 et mpox)
 COVID_DATA_URL = "https://covid.ourworldindata.org/data/owid-covid-data.csv"
-MPOX_DATA_URL = "https://raw.githubusercontent.com/globaldothealth/monkeypox/main/latest.csv"
+MPOX_DATA_URL = "https://7rydd2v2ra.execute-api.eu-central-1.amazonaws.com/web/"
 
 def download_data(url, filename):
     """Télécharger les données à partir de l'URL spécifiée"""
@@ -156,7 +156,7 @@ def generate_visualizations(covid_df, mpox_df):
     # Cette visualisation dépend de la structure des données mpox
     # Pour l'instant, on ajoute un texte explicatif
     plt.text(0.5, 0.5, "Comparaison COVID-19 vs mpox\n(Nécessite plus de données ou un format commun)", 
-             horizontalalignment='center', verticalalignment='center', transform=plt.gca().transAxes)
+            horizontalalignment='center', verticalalignment='center', transform=plt.gca().transAxes)
     plt.axis('off')
     
     plt.tight_layout()

@@ -20,7 +20,7 @@ def main():
     if not os.path.exists('data/covid_processed.csv') or not os.path.exists('data/mpox_processed.csv'):
         print("\n=== Démarrage du processus ETL ===")
         try:
-            import etl_script
+            import scripts.etl_script as etl_script
             etl_script.main()
             print("Processus ETL terminé avec succès.")
         except Exception as e:
@@ -36,8 +36,8 @@ def main():
     print("Appuyez sur Ctrl+C pour arrêter le dashboard.")
     
     try:
-        import dashboard
-        dashboard.app.run_server(debug=False)
+        import scripts.dashboard as dashboard
+        dashboard.app.run(debug=False)
     except KeyboardInterrupt:
         print("\nDashboard arrêté par l'utilisateur.")
     except Exception as e:

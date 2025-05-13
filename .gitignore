@@ -10,3 +10,6 @@ venv/
 
 # VSCode config
 .vscode/
+
+# Data
+data/
