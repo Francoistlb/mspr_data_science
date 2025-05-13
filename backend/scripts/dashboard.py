@@ -10,7 +10,7 @@ import os
 # Vérifier si les données existent, sinon exécuter l'ETL
 if not os.path.exists('data/covid_processed.csv') or not os.path.exists('data/mpox_processed.csv'):
     print("Les données transformées n'existent pas. Exécution du script ETL...")
-    import etl_script
+    import scripts.etl_script as etl_script
     etl_script.main()
 
 # Chargement des données
@@ -344,4 +344,4 @@ def update_comparison(countries):
 # Lancement de l'application
 if __name__ == '__main__':
     print("Démarrage du dashboard...")
-    app.run_server(debug=True) 
+    app.run(debug=True) 

@@ -16,3 +16,9 @@ SQLAlchemy==2.0.38
 starlette==0.45.3
 typing_extensions==4.12.2
 uvicorn==0.34.0
+pandas==2.2.2
+numpy==1.26.4
+seaborn==0.12.2
+requests==2.29.0
+dash==2.9.3
+plotly==5.14.1 
