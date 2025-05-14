@@ -22,6 +22,13 @@ try:
     # Vérifier la structure des données mpox et adapter si nécessaire
     if 'Date_confirmation' in mpox_df.columns:
         mpox_df['Date_confirmation'] = pd.to_datetime(mpox_df['Date_confirmation'], errors='coerce')
+        print("Colonnes disponibles dans mpox_df:", mpox_df.columns.tolist())
+    else:
+        # Rechercher une colonne de date
+        date_cols = [col for col in mpox_df.columns if any(x in col.lower() for x in ['date', 'time'])]
+        if date_cols:
+            mpox_df.rename(columns={date_cols[0]: 'Date_confirmation'}, inplace=True)
+            mpox_df['Date_confirmation'] = pd.to_datetime(mpox_df['Date_confirmation'], errors='coerce')
 except Exception as e:
     print(f"Erreur lors du chargement des données mpox: {e}")
     mpox_df = None
@@ -192,8 +199,11 @@ def check_mpox_data(_):
         )
     
     # Identifier les colonnes clés dans le dataframe mpox
-    country_col = next((col for col in mpox_df.columns if 'country' in col.lower() or 'nation' in col.lower()), None)
-    date_col = next((col for col in mpox_df.columns if 'date' in col.lower()), None)
+    country_col = next((col for col in mpox_df.columns if col.lower() in ['country', 'location'] or 'country' in col.lower() or 'nation' in col.lower()), None)
+    date_col = next((col for col in mpox_df.columns if col.lower() in ['date_confirmation', 'date'] or 'date' in col.lower()), None)
+    case_col = next((col for col in mpox_df.columns if col.lower() in ['cases', 'total_cases'] or 'case' in col.lower()), None)
+    
+    print(f"Colonnes détectées - Pays: {country_col}, Date: {date_col}, Cas: {case_col}")
     
     if country_col is None:
         return (
@@ -215,6 +225,27 @@ def check_mpox_data(_):
             ])
         )
     
+    # Préparation des filtres pour les métriques
+    metric_filter = None
+    if 'total_cases' in mpox_df.columns and 'new_cases' in mpox_df.columns:
+        metric_filter = html.Div([
+            html.Label("Sélectionner une métrique:"),
+            dcc.RadioItems(
+                id='mpox-metric-radio',
+                options=[
+                    {'label': 'Cas totaux', 'value': 'total_cases'},
+                    {'label': 'Nouveaux cas', 'value': 'new_cases'}
+                ],
+                value='total_cases',
+                labelStyle={'display': 'inline-block', 'marginRight': '10px'}
+            )
+        ])
+    
+    # Préparation du graphique temporel
+    time_chart = None
+    if date_col:
+        time_chart = dcc.Graph(id='mpox-time-chart')
+    
     # Interface pour les données mpox
     mpox_content = html.Div([
         # Filtres
@@ -226,12 +257,18 @@ def check_mpox_data(_):
                         for country in sorted(mpox_df[country_col].unique())],
                 value=mpox_df[country_col].value_counts().nlargest(5).index.tolist(),
                 multi=True
-            )
+            ),
+            
+            # Ajouter le filtre de métrique s'il est disponible
+            metric_filter if metric_filter else None
         ], style={'padding': '20px', 'backgroundColor': '#f8f9fa', 'borderRadius': '5px'}),
         
         # Graphiques
         dcc.Graph(id='mpox-map'),
-        dcc.Graph(id='mpox-bar-chart')
+        dcc.Graph(id='mpox-bar-chart'),
+        
+        # Ajouter le graphique temporel s'il est disponible
+        time_chart if time_chart else None
     ])
     
     return html.Div([
@@ -246,17 +283,28 @@ def check_mpox_data(_):
 )
 def update_mpox_graphs(countries):
     if mpox_df is None or mpox_df.empty:
-        return go.Figure(), go.Figure()
+        empty_fig = go.Figure()
+        empty_fig.update_layout(title="Aucune donnée disponible")
+        return empty_fig, empty_fig
     
     # Identifier les colonnes clés
-    country_col = next((col for col in mpox_df.columns if 'country' in col.lower() or 'nation' in col.lower()), None)
+    country_col = next((col for col in mpox_df.columns if col.lower() in ['country', 'location'] or 'country' in col.lower() or 'nation' in col.lower()), None)
+    case_col = next((col for col in mpox_df.columns if col.lower() in ['cases', 'total_cases'] or 'case' in col.lower()), None)
     
     if country_col is None:
-        return go.Figure(), go.Figure()
+        empty_fig = go.Figure()
+        empty_fig.update_layout(title="Données non structurées")
+        return empty_fig, empty_fig
     
     # Agréger les données par pays
-    country_counts = mpox_df[country_col].value_counts().reset_index()
-    country_counts.columns = ['Country', 'Cases']
+    if case_col:
+        # Utiliser la colonne de cas existante
+        country_counts = mpox_df.groupby(country_col)[case_col].sum().reset_index()
+        country_counts.columns = ['Country', 'Cases']
+    else:
+        # Compter le nombre d'occurrences
+        country_counts = mpox_df[country_col].value_counts().reset_index()
+        country_counts.columns = ['Country', 'Cases']
     
     # Filtrer par pays sélectionnés si spécifié
     if countries and len(countries) > 0:
@@ -285,6 +333,68 @@ def update_mpox_graphs(countries):
     
     return map_fig, bar_fig
 
+# Callback pour le graphique d'évolution temporelle mpox (si présent)
+@app.callback(
+    Output('mpox-time-chart', 'figure'),
+    [Input('mpox-country-dropdown', 'value')]
+)
+def update_mpox_time_chart(countries):
+    # Si le callback est appelé mais que le graphique n'existe pas dans le layout,
+    # Dash va ignorer silencieusement le callback
+    if mpox_df is None or mpox_df.empty:
+        empty_fig = go.Figure()
+        empty_fig.update_layout(title="Aucune donnée disponible")
+        return empty_fig
+    
+    # Identifier les colonnes clés
+    country_col = next((col for col in mpox_df.columns if col.lower() in ['country', 'location'] or 'country' in col.lower() or 'nation' in col.lower()), None)
+    date_col = next((col for col in mpox_df.columns if col.lower() in ['date_confirmation', 'date'] or 'date' in col.lower()), None)
+    case_col = next((col for col in mpox_df.columns if col.lower() in ['cases', 'total_cases'] or 'case' in col.lower()), None)
+    
+    if country_col is None or date_col is None:
+        empty_fig = go.Figure()
+        empty_fig.update_layout(title="Données temporelles non disponibles")
+        return empty_fig
+    
+    time_fig = go.Figure()
+    
+    # Si aucun pays n'est sélectionné, prendre les 5 premiers pays
+    if not countries or len(countries) == 0:
+        countries = mpox_df[country_col].value_counts().nlargest(5).index.tolist()
+    
+    for country in countries:
+        country_data = mpox_df[mpox_df[country_col] == country]
+        if not country_data.empty:
+            # Trier par date
+            country_data = country_data.sort_values(date_col)
+            
+            # Sélectionner la colonne à afficher
+            y_col = case_col if case_col else 'cases'
+            if y_col not in country_data.columns and 'total_cases' in country_data.columns:
+                y_col = 'total_cases'
+            elif y_col not in country_data.columns and 'new_cases' in country_data.columns:
+                # Calculer le cumulatif des nouveaux cas
+                country_data = country_data.sort_values(date_col)
+                country_data['cumulative_cases'] = country_data['new_cases'].cumsum()
+                y_col = 'cumulative_cases'
+            
+            if y_col in country_data.columns:
+                time_fig.add_trace(go.Scatter(
+                    x=country_data[date_col],
+                    y=country_data[y_col],
+                    mode='lines',
+                    name=country
+                ))
+    
+    time_fig.update_layout(
+        title='Évolution des cas de Mpox par pays',
+        xaxis_title='Date',
+        yaxis_title='Nombre de cas',
+        template='plotly_white'
+    )
+    
+    return time_fig
+
 # Callback pour la comparaison
 @app.callback(
     Output('comparison-chart', 'figure'),
@@ -292,9 +402,12 @@ def update_mpox_graphs(countries):
 )
 def update_comparison(countries):
     # Créer un graphique comparatif entre COVID-19 et Mpox
-    # Cette partie dépend de la structure des données Mpox
     
     fig = go.Figure()
+    
+    # Si aucun pays n'est sélectionné, utiliser quelques pays par défaut
+    if not countries or len(countries) == 0:
+        countries = ['France', 'United States', 'Germany']
     
     # Ajouter les données COVID
     for country in countries:
@@ -309,24 +422,71 @@ def update_comparison(countries):
     
     # Ajouter les données Mpox si disponibles
     if mpox_df is not None and not mpox_df.empty:
-        country_col = next((col for col in mpox_df.columns if 'country' in col.lower() or 'nation' in col.lower()), None)
-        date_col = next((col for col in mpox_df.columns if 'date' in col.lower()), None)
+        # Identifier les colonnes clés
+        country_col = next((col for col in mpox_df.columns if col.lower() in ['country', 'location'] or 'country' in col.lower() or 'nation' in col.lower()), None)
+        date_col = next((col for col in mpox_df.columns if col.lower() in ['date_confirmation', 'date'] or 'date' in col.lower()), None)
+        case_col = next((col for col in mpox_df.columns if col.lower() in ['cases', 'total_cases'] or 'case' in col.lower()), None)
         
         if country_col is not None and date_col is not None:
             for country in countries:
-                country_data = mpox_df[mpox_df[country_col] == country]
-                if not country_data.empty:
-                    # Agréger par date
-                    date_counts = country_data.groupby(date_col).size().reset_index()
-                    date_counts.columns = ['Date', 'Cases']
+                # Filtrer les données par pays
+                matching_countries = []
+                
+                # Correspondance exacte
+                if country in mpox_df[country_col].values:
+                    matching_countries = [country]
+                else:
+                    # Essayer des correspondances partielles
+                    matching_countries = [c for c in mpox_df[country_col].unique() 
+                                          if country.lower() in c.lower() or c.lower() in country.lower()]
+                
+                if not matching_countries:
+                    continue
                     
-                    fig.add_trace(go.Scatter(
-                        x=date_counts['Date'],
-                        y=date_counts['Cases'],
-                        mode='lines',
-                        name=f"{country} - Mpox",
-                        line=dict(dash='dash')
-                    ))
+                for match_country in matching_countries[:1]:  # Limiter à une correspondance
+                    country_data = mpox_df[mpox_df[country_col] == match_country]
+                    if country_data.empty:
+                        continue
+                        
+                    # Sélectionner et préparer les données pour le graphique
+                    try:
+                        # Trier par date
+                        country_data = country_data.sort_values(date_col)
+                        
+                        # Sélectionner la colonne de cas appropriée
+                        if case_col and case_col in country_data.columns:
+                            y_values = country_data[case_col]
+                        elif 'total_cases' in country_data.columns:
+                            y_values = country_data['total_cases']
+                        elif 'new_cases' in country_data.columns:
+                            # Calculer le cumulatif
+                            y_values = country_data['new_cases'].cumsum()
+                        else:
+                            # Compter par date
+                            date_counts = country_data.groupby(date_col).size()
+                            dates = date_counts.index
+                            y_values = date_counts.values
+                            
+                            fig.add_trace(go.Scatter(
+                                x=dates,
+                                y=y_values,
+                                mode='lines',
+                                name=f"{country} - Mpox",
+                                line=dict(dash='dash')
+                            ))
+                            continue
+                        
+                        # Ajouter la trace avec les valeurs calculées
+                        fig.add_trace(go.Scatter(
+                            x=country_data[date_col],
+                            y=y_values,
+                            mode='lines',
+                            name=f"{country} - Mpox",
+                            line=dict(dash='dash')
+                        ))
+                        
+                    except Exception as e:
+                        print(f"Erreur lors de l'ajout des données mpox pour {country}: {e}")
     
     fig.update_layout(
         title='Comparaison COVID-19 vs Mpox par pays',
@@ -344,4 +504,20 @@ def update_comparison(countries):
 # Lancement de l'application
 if __name__ == '__main__':
     print("Démarrage du dashboard...")
-    app.run(debug=True) 
+    app.run(debug=True)
+else:
+    # Cette partie est exécutée lorsque le module est importé
+    # Ajouter des messages de débogage
+    print("Le module dashboard.py a été importé")
+    print("Structure des données mpox:")
+    if mpox_df is not None:
+        print(f"Colonnes: {mpox_df.columns.tolist()}")
+        print(f"Nombre de lignes: {len(mpox_df)}")
+        print(f"Premières lignes: \n{mpox_df.head(2)}")
+    else:
+        print("Aucune donnée mpox disponible")
+        
+    print("Structure des données COVID:")
+    print(f"Colonnes: {covid_df.columns.tolist()}")
+    print(f"Nombre de lignes: {len(covid_df)}")
+    print(f"Premières lignes: \n{covid_df.head(2)}") 

@@ -73,7 +73,7 @@ DATABASE_URL=postgresql://user:password@localhost:5432/mspr_db
 1. Exécuter le processus ETL pour télécharger et transformer les données :
 ```bash
 python run.py etl
-python run.py analisys
+python run.py analysis
 ```
 
 Cette étape va :

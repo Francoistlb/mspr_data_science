@@ -6,6 +6,7 @@ import os
 from datetime import datetime
 import requests
 from io import StringIO
+import kagglehub
 
 # Création du répertoire pour stocker les données
 if not os.path.exists('data'):
@@ -13,7 +14,8 @@ if not os.path.exists('data'):
 
 # URLs des données (sources publiques pour COVID-19 et mpox)
 COVID_DATA_URL = "https://covid.ourworldindata.org/data/owid-covid-data.csv"
-MPOX_DATA_URL = "https://7rydd2v2ra.execute-api.eu-central-1.amazonaws.com/web/lastest.csv"
+# MPOX_DATA_URL = "https://7rydd2v2ra.execute-api.eu-central-1.amazonaws.com/web/lastest.csv"
+MPOX_KAGGLE_DATASET = "utkarshx27/mpox-monkeypox-data"
 
 def download_data(url, filename):
     """Télécharger les données à partir de l'URL spécifiée"""
@@ -62,32 +64,77 @@ def load_and_clean_covid_data():
 
 def load_and_clean_mpox_data():
     """Charger et nettoyer les données mpox/monkeypox"""
-    if not os.path.exists('data/mpox_data.csv'):
-        success = download_data(MPOX_DATA_URL, 'mpox_data.csv')
-        if not success:
-            return None
-    
-    # Chargement des données
     try:
-        mpox_df = pd.read_csv('data/mpox_data.csv')
+        # Télécharger les données depuis Kaggle
+        print(f"Téléchargement des données mpox depuis Kaggle dataset {MPOX_KAGGLE_DATASET}...")
+        dataset_path = kagglehub.dataset_download(MPOX_KAGGLE_DATASET)
+        print(f"Données téléchargées dans: {dataset_path}")
         
-        # Nettoyage et transformation
-        # Selon la structure des données, nous pouvons avoir besoin d'ajuster ce code
-        if 'Date_confirmation' in mpox_df.columns:
-            mpox_df['Date_confirmation'] = pd.to_datetime(mpox_df['Date_confirmation'], errors='coerce')
+        # Trouver le fichier CSV principal dans le dossier téléchargé
+        csv_files = [f for f in os.listdir(dataset_path) if f.endswith('.csv')]
+        if not csv_files:
+            print("Aucun fichier CSV trouvé dans les données téléchargées.")
+            return None
+            
+        # Utiliser le premier fichier CSV trouvé
+        mpox_file = os.path.join(dataset_path, csv_files[0])
+        print(f"Utilisation du fichier: {mpox_file}")
         
-        if 'Country' in mpox_df.columns and 'City' in mpox_df.columns:
-            # Agréger les données par pays et par date
-            mpox_grouped = mpox_df.groupby(['Country', pd.Grouper(key='Date_confirmation', freq='D')]).size().reset_index(name='cases')
-            return mpox_grouped
+        # Copier le fichier dans notre dossier data
+        mpox_df = pd.read_csv(mpox_file)
+        mpox_df.to_csv('data/mpox_data.csv', index=False)
+        print("Données mpox copiées dans data/mpox_data.csv")
+        
+        # Analyse des colonnes disponibles
+        print("Colonnes disponibles dans le fichier Kaggle:")
+        print(mpox_df.columns.tolist())
+        
+        # Identification des colonnes importantes
+        country_cols = [col for col in mpox_df.columns if any(x in col.lower() for x in ['country', 'nation', 'location'])]
+        date_cols = [col for col in mpox_df.columns if any(x in col.lower() for x in ['date', 'time', 'year'])]
+        case_cols = [col for col in mpox_df.columns if any(x in col.lower() for x in ['cases', 'confirm', 'positive'])]
+        
+        print(f"Colonnes pays identifiées: {country_cols}")
+        print(f"Colonnes date identifiées: {date_cols}")
+        print(f"Colonnes cas identifiées: {case_cols}")
+        
+        # Standardisation des noms de colonnes pour l'analyse
+        renamed_df = mpox_df.copy()
+        
+        # Si des colonnes ont été identifiées, on les renomme pour la standardisation
+        if country_cols:
+            renamed_df.rename(columns={country_cols[0]: 'Country'}, inplace=True)
         else:
-            print("Les colonnes attendues ne sont pas présentes. Vérification du schema des données...")
-            print(mpox_df.columns.tolist())
-            return mpox_df
+            print("Aucune colonne de pays identifiée, création d'une colonne factice")
+            renamed_df['Country'] = 'Unknown'
+            
+        if date_cols:
+            renamed_df.rename(columns={date_cols[0]: 'Date_confirmation'}, inplace=True)
+            renamed_df['Date_confirmation'] = pd.to_datetime(renamed_df['Date_confirmation'], errors='coerce')
+        else:
+            print("Aucune colonne de date identifiée, création d'une colonne factice")
+            renamed_df['Date_confirmation'] = pd.Timestamp.now()
+            
+        if case_cols:
+            renamed_df.rename(columns={case_cols[0]: 'cases'}, inplace=True)
+        else:
+            print("Aucune colonne de cas identifiée, utilisation du nombre d'occurrences")
+            renamed_df['cases'] = 1  # Chaque ligne représente un cas
+            
+        # Agréger par pays et par date si possible
+        try:
+            if 'Country' in renamed_df.columns and 'Date_confirmation' in renamed_df.columns:
+                mpox_grouped = renamed_df.groupby(['Country', pd.Grouper(key='Date_confirmation', freq='D')]).agg({'cases': 'sum'}).reset_index()
+                return mpox_grouped
+            else:
+                return renamed_df
+        except Exception as e:
+            print(f"Erreur lors de l'agrégation: {e}")
+            return renamed_df
+            
     except Exception as e:
         print(f"Erreur lors du traitement des données mpox: {e}")
-        # Essai avec une structure différente
-        return pd.read_csv('data/mpox_data.csv')
+        return None
 
 def generate_visualizations(covid_df, mpox_df):
     """Générer des visualisations pour les deux jeux de données"""
