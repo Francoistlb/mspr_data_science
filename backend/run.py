@@ -28,5 +28,5 @@ if __name__ == "__main__":
         import import_db
         import_db.main()
     else:
-        print("Commande non reconnue. Utilisez 'etl', 'dashboard', 'start' ou 'import'")
+        print("Commande non reconnue. Utilisez 'etl', 'dashboard', 'analysis' ou 'importCovid'")
         sys.exit(1)

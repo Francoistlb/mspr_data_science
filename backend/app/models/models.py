@@ -14,7 +14,7 @@ class FCovid(Base):
     """Table de faits principale pour les données COVID"""
     __tablename__ = 'f_covid'
     
-    covid_fact_id = Column(Integer, primary_key=True)
+    covid_fact_id = Column(Integer, primary_key=True, autoincrement=True)
     date = Column(Date, nullable=False)  # Format: YYYY-MM-DD
     location_id = Column(Integer, ForeignKey('d_location.location_id'), nullable=False)
     
@@ -31,7 +31,3 @@ class FCovid(Base):
     # Métriques de vaccination
     total_vaccinations = Column(Numeric(15, 2))
     people_vaccinated = Column(Numeric(15, 2))
-    
-    # Métadonnées
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

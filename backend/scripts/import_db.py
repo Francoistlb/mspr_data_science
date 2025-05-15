@@ -74,6 +74,13 @@ def main():
         print("Import de la table f_covid...")
         f_covid.to_sql('f_covid', db.bind, if_exists='fail', index=True, index_label='covid_fact_id')
         
+        # Recréer la séquence pour covid_fact_id
+        db.execute(text("CREATE SEQUENCE IF NOT EXISTS f_covid_covid_fact_id_seq"))
+        db.execute(text("ALTER TABLE f_covid ALTER COLUMN covid_fact_id SET DEFAULT nextval('f_covid_covid_fact_id_seq')"))
+
+        # Synchroniser la séquence avec les données
+        db.execute(text("SELECT setval('f_covid_covid_fact_id_seq', (SELECT MAX(covid_fact_id) FROM f_covid))"))
+
         # Commit des changements
         db.commit()
         print("Import des données terminé avec succès!")
