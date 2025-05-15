@@ -98,37 +98,33 @@ def load_and_clean_mpox_data():
             'new_cases_smoothed_per_million', 'new_deaths_per_million', 
             'total_deaths_per_million', 'new_deaths_smoothed_per_million'
         ]
-        
-        # Vérifier si toutes les colonnes requises sont disponibles
+
+        # Vérifier quelles colonnes sont présentes et lesquelles manquent
+        available_cols = [col for col in required_cols if col in mpox_df.columns]
         missing_cols = [col for col in required_cols if col not in mpox_df.columns]
+
+        # Afficher un avertissement si des colonnes sont absentes
         if missing_cols:
-            print(f"Attention: Les colonnes suivantes sont manquantes et seront initialisées à 0: {missing_cols}")
-            for col in missing_cols:
-                mpox_df[col] = 0
-        
-        # Sélectionner uniquement les colonnes nécessaires
-        mpox_clean_df = mpox_df[[col for col in required_cols if col in mpox_df.columns]]
-        
-        # Assurer que toutes les colonnes requises sont présentes
-        for col in required_cols:
-            if col not in mpox_clean_df.columns:
-                mpox_clean_df[col] = 0
-        
-        # Conversion de la date
+            print(f"⚠️ Attention : les colonnes suivantes sont absentes du fichier CSV et seront ignorées : {missing_cols}")
+
+        # Garder uniquement les colonnes disponibles parmi les requises
+        mpox_clean_df = mpox_df[available_cols].copy()
+
+
+        # Conversion de la date (si présente)
         if 'date' in mpox_clean_df.columns:
             mpox_clean_df['date'] = pd.to_datetime(mpox_clean_df['date'], errors='coerce')
         else:
-            print("Colonne 'date' non trouvée, création d'une colonne factice")
-            mpox_clean_df['date'] = pd.Timestamp.now()
-        
-        # Remplacement des valeurs manquantes
+            print("⚠️ Colonne 'date' absente : aucune conversion possible.")
+
+        # Remplacement des valeurs manquantes (NaN)
         mpox_clean_df = mpox_clean_df.fillna(0)
-        
-        return mpox_clean_df
-            
+
     except Exception as e:
         print(f"Erreur lors du traitement des données mpox: {e}")
         return None
+    
+    return mpox_clean_df
 
 def generate_visualizations(covid_df, mpox_df):
     """Générer des visualisations pour les deux jeux de données"""
