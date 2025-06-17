@@ -23,10 +23,10 @@ if __name__ == "__main__":
         start_analysis.main()
     elif command == "importCovid":
         import import_db
-        import_db.main()
+        import_db.insert_f_covid()
     elif command == "importMpox":
         import import_db
-        import_db.main()
+        import_db.insert_f_mpox()
     else:
         print("Commande non reconnue. Utilisez 'etl', 'dashboard', 'analysis' ou 'importCovid'")
         sys.exit(1)

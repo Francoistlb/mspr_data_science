@@ -85,56 +85,46 @@ def load_and_clean_mpox_data():
         mpox_df.to_csv('data/mpox_data.csv', index=False)
         print("Données mpox copiées dans data/mpox_data.csv")
         
-        # Analyse des colonnes disponibles
+        # Afficher les colonnes disponibles pour le débogage
         print("Colonnes disponibles dans le fichier Kaggle:")
         print(mpox_df.columns.tolist())
         
-        # Identification des colonnes importantes
-        country_cols = [col for col in mpox_df.columns if any(x in col.lower() for x in ['country', 'nation', 'location'])]
-        date_cols = [col for col in mpox_df.columns if any(x in col.lower() for x in ['date', 'time', 'year'])]
-        case_cols = [col for col in mpox_df.columns if any(x in col.lower() for x in ['cases', 'confirm', 'positive'])]
-        
-        print(f"Colonnes pays identifiées: {country_cols}")
-        print(f"Colonnes date identifiées: {date_cols}")
-        print(f"Colonnes cas identifiées: {case_cols}")
-        
-        # Standardisation des noms de colonnes pour l'analyse
-        renamed_df = mpox_df.copy()
-        
-        # Si des colonnes ont été identifiées, on les renomme pour la standardisation
-        if country_cols:
-            renamed_df.rename(columns={country_cols[0]: 'Country'}, inplace=True)
+        # Colonnes requises selon le modèle FMpox
+        required_cols = [
+            'location', 'date', 
+            'total_cases', 'total_deaths', 'new_cases', 'new_deaths', 
+            'new_cases_smoothed', 'new_deaths_smoothed', 
+            'new_cases_per_million', 'total_cases_per_million', 
+            'new_cases_smoothed_per_million', 'new_deaths_per_million', 
+            'total_deaths_per_million', 'new_deaths_smoothed_per_million'
+        ]
+
+        # Vérifier quelles colonnes sont présentes et lesquelles manquent
+        available_cols = [col for col in required_cols if col in mpox_df.columns]
+        missing_cols = [col for col in required_cols if col not in mpox_df.columns]
+
+        # Afficher un avertissement si des colonnes sont absentes
+        if missing_cols:
+            print(f"⚠️ Attention : les colonnes suivantes sont absentes du fichier CSV et seront ignorées : {missing_cols}")
+
+        # Garder uniquement les colonnes disponibles parmi les requises
+        mpox_clean_df = mpox_df[available_cols].copy()
+
+
+        # Conversion de la date (si présente)
+        if 'date' in mpox_clean_df.columns:
+            mpox_clean_df['date'] = pd.to_datetime(mpox_clean_df['date'], errors='coerce')
         else:
-            print("Aucune colonne de pays identifiée, création d'une colonne factice")
-            renamed_df['Country'] = 'Unknown'
-            
-        if date_cols:
-            renamed_df.rename(columns={date_cols[0]: 'Date_confirmation'}, inplace=True)
-            renamed_df['Date_confirmation'] = pd.to_datetime(renamed_df['Date_confirmation'], errors='coerce')
-        else:
-            print("Aucune colonne de date identifiée, création d'une colonne factice")
-            renamed_df['Date_confirmation'] = pd.Timestamp.now()
-            
-        if case_cols:
-            renamed_df.rename(columns={case_cols[0]: 'cases'}, inplace=True)
-        else:
-            print("Aucune colonne de cas identifiée, utilisation du nombre d'occurrences")
-            renamed_df['cases'] = 1  # Chaque ligne représente un cas
-            
-        # Agréger par pays et par date si possible
-        try:
-            if 'Country' in renamed_df.columns and 'Date_confirmation' in renamed_df.columns:
-                mpox_grouped = renamed_df.groupby(['Country', pd.Grouper(key='Date_confirmation', freq='D')]).agg({'cases': 'sum'}).reset_index()
-                return mpox_grouped
-            else:
-                return renamed_df
-        except Exception as e:
-            print(f"Erreur lors de l'agrégation: {e}")
-            return renamed_df
-            
+            print("⚠️ Colonne 'date' absente : aucune conversion possible.")
+
+        # Remplacement des valeurs manquantes (NaN)
+        mpox_clean_df = mpox_clean_df.fillna(0)
+
     except Exception as e:
         print(f"Erreur lors du traitement des données mpox: {e}")
         return None
+    
+    return mpox_clean_df
 
 def generate_visualizations(covid_df, mpox_df):
     """Générer des visualisations pour les deux jeux de données"""
@@ -177,10 +167,10 @@ def generate_visualizations(covid_df, mpox_df):
         plt.subplot(2, 2, 3)
         
         # Adaptation en fonction de la structure réelle des données
-        if 'Country' in mpox_df.columns and 'cases' in mpox_df.columns:
-            mpox_by_country = mpox_df.groupby('Country')['cases'].sum().reset_index()
-            top_mpox = mpox_by_country.sort_values('cases', ascending=False).head(10)
-            sns.barplot(x='cases', y='Country', data=top_mpox)
+        if 'location' in mpox_df.columns and 'total_cases' in mpox_df.columns:
+            mpox_by_country = mpox_df.groupby('location')['total_cases'].sum().reset_index()
+            top_mpox = mpox_by_country.sort_values('total_cases', ascending=False).head(10)
+            sns.barplot(x='total_cases', y='location', data=top_mpox)
             plt.title('Pays avec le plus de cas de mpox')
             plt.xlabel('Nombre de cas')
             plt.ylabel('Pays')
@@ -191,9 +181,9 @@ def generate_visualizations(covid_df, mpox_df):
             country_col = next((col for col in mpox_df.columns if 'country' in col.lower() or 'nation' in col.lower()), None)
             if country_col:
                 mpox_by_country = mpox_df[country_col].value_counts().reset_index()
-                mpox_by_country.columns = ['Country', 'Count']
+                mpox_by_country.columns = ['location', 'Count']
                 top_mpox = mpox_by_country.head(10)
-                sns.barplot(x='Count', y='Country', data=top_mpox)
+                sns.barplot(x='Count', y='location', data=top_mpox)
                 plt.title('Distribution des cas de mpox par pays')
                 plt.xlabel('Nombre de cas')
                 plt.ylabel('Pays')
@@ -201,10 +191,43 @@ def generate_visualizations(covid_df, mpox_df):
     # 4. Comparaison COVID-19 vs mpox (si possible)
     plt.subplot(2, 2, 4)
     # Cette visualisation dépend de la structure des données mpox
-    # Pour l'instant, on ajoute un texte explicatif
-    plt.text(0.5, 0.5, "Comparaison COVID-19 vs mpox\n(Nécessite plus de données ou un format commun)", 
-            horizontalalignment='center', verticalalignment='center', transform=plt.gca().transAxes)
-    plt.axis('off')
+    if covid_df is not None and mpox_df is not None and 'location' in mpox_df.columns and 'total_cases' in mpox_df.columns:
+        # Trouver les pays communs aux deux datasets
+        common_countries = set(covid_df['location'].unique()).intersection(set(mpox_df['location'].unique()))
+        if common_countries:
+            # Sélectionner quelques pays communs (max 5)
+            selected_countries = list(common_countries)[:5]
+            
+            # Créer un dataframe comparatif
+            compare_data = []
+            
+            for country in selected_countries:
+                covid_cases = covid_df[covid_df['location'] == country]['total_cases'].max()
+                mpox_cases = mpox_df[mpox_df['location'] == country]['total_cases'].max()
+                
+                compare_data.append({
+                    'Pays': country,
+                    'COVID-19': covid_cases if not pd.isna(covid_cases) else 0,
+                    'Mpox': mpox_cases if not pd.isna(mpox_cases) else 0
+                })
+            
+            compare_df = pd.DataFrame(compare_data)
+            compare_df = compare_df.melt(id_vars=['Pays'], var_name='Maladie', value_name='Cas')
+            
+            # Graphique
+            sns.barplot(x='Pays', y='Cas', hue='Maladie', data=compare_df)
+            plt.title('Comparaison COVID-19 vs Mpox')
+            plt.ylabel('Nombre total de cas')
+            plt.yscale('log')  # Échelle logarithmique pour mieux voir les différences
+            plt.legend(title='')
+        else:
+            plt.text(0.5, 0.5, "Comparaison impossible : aucun pays commun entre les datasets", 
+                    horizontalalignment='center', verticalalignment='center', transform=plt.gca().transAxes)
+            plt.axis('off')
+    else:
+        plt.text(0.5, 0.5, "Comparaison COVID-19 vs mpox\n(Nécessite plus de données ou un format commun)", 
+                horizontalalignment='center', verticalalignment='center', transform=plt.gca().transAxes)
+        plt.axis('off')
     
     plt.tight_layout()
     plt.savefig('data/covid_mpox_visualizations.png')

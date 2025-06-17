@@ -36,7 +36,7 @@ def main():
     print("Appuyez sur Ctrl+C pour arrêter le dashboard.")
     
     try:
-        import scripts.dashboard as dashboard
+        import dashboard as dashboard
         dashboard.app.run(debug=False)
     except KeyboardInterrupt:
         print("\nDashboard arrêté par l'utilisateur.")
