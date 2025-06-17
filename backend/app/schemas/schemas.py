@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import date, datetime
 
@@ -11,28 +11,24 @@ class DLocationCreate(DLocationBase):
 
 class DLocationRead(DLocationBase):
     location_id: int
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ----------- f_covid -----------
 class FCovidBase(BaseModel):
     date: date
     location_id: int
-    total_cases: Optional[float]
-    new_cases: Optional[float]
-    total_deaths: Optional[float]
-    new_deaths: Optional[float]
-    icu_patients: Optional[float]
-    hosp_patients: Optional[float]
-    total_vaccinations: Optional[float]
-    people_vaccinated: Optional[float]
+    total_cases: Optional[float] = None
+    new_cases: Optional[float] = None
+    total_deaths: Optional[float] = None
+    new_deaths: Optional[float] = None
+    icu_patients: Optional[float] = None
+    hosp_patients: Optional[float] = None
+    total_vaccinations: Optional[float] = None
+    people_vaccinated: Optional[float] = None
 
 class FCovidCreate(FCovidBase):
     pass
 
 class FCovidRead(FCovidBase):
     covid_fact_id: int
-    created_at: datetime
-    updated_at: datetime
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
