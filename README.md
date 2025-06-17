@@ -98,32 +98,18 @@ python run.py importCovid
 python run.py importMpox
 ```
 
-## Utilisation
-
-Le projet propose plusieurs modes d'utilisation via le script `run.py` :
-
-```bash
-python run.py [commande]
-```
-
-Commandes disponibles :
-- `etl` : Exécution des scripts ETL (préparation des données)
-- `import` : Import des données préparées dans la base
-- `dashboard` : Lancement du dashboard Plotly
-- `start_analysis` : Démarrage de l'analyse des données
-
 ### API Backend
 
 Pour lancer l'API :
 ```bash
-cd backend
-uvicorn app.main:app --reload
+/backend
+python run_api.py
 ```
 
 L'API sera accessible à :
 - Interface : http://localhost:8000
 - Documentation Swagger : http://localhost:8000/docs
-- Documentation ReDoc : http://localhost:8000/redoc
+- Enpoint : http://localhost:8000/api
 
 ### Dashboard
 

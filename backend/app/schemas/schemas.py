@@ -2,7 +2,7 @@ from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import date, datetime
 
-# ----------- d_location -----------
+# ----------- d_location -----------#
 class DLocationBase(BaseModel):
     location_name: str
 
@@ -13,7 +13,7 @@ class DLocationRead(DLocationBase):
     location_id: int
     model_config = ConfigDict(from_attributes=True)
 
-# ----------- f_covid -----------
+# ----------- f_covid -----------#
 class FCovidBase(BaseModel):
     date: date
     location_id: int
@@ -32,3 +32,19 @@ class FCovidCreate(FCovidBase):
 class FCovidRead(FCovidBase):
     covid_fact_id: int
     model_config = ConfigDict(from_attributes=True)
+
+
+# ----------- f_mpox -----------#
+class FMpoxBase(BaseModel):
+    date: date
+    location_id: int
+    cases: Optional[float]
+
+class FMpoxCreate(FMpoxBase):
+    pass
+
+class FMpoxRead(FMpoxBase):
+    mpox_fact_id: int
+
+    class Config:
+        orm_mode = True

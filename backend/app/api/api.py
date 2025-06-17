@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from backend.app.api.endpoints import locations, covid
+from backend.app.api.endpoints import locations, covid, mpox
 
 api_router = APIRouter()
 
@@ -14,4 +14,10 @@ api_router.include_router(
     covid.router,
     prefix="/covid",
     tags=["Données COVID-19"]
-) 
+)
+
+api_router.include_router(
+    mpox.router,
+    prefix="/mpox",
+    tags=["Données Mpox"]
+)
