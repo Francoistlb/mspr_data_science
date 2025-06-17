@@ -94,7 +94,8 @@ python -m backend.app.init_db
 
 3. Importer les données préparées :
 ```bash
-python run.py import
+python run.py importCovid
+python run.py importMpox
 ```
 
 ## Utilisation
