@@ -59,6 +59,9 @@ def load_and_clean_covid_data():
         'new_cases': 0,
         'new_deaths': 0
     })
+
+    # Effacer les doublons 
+    covid_df.drop_duplicates(inplace=True)
     
     return covid_df
 
@@ -119,6 +122,10 @@ def load_and_clean_mpox_data():
 
         # Remplacement des valeurs manquantes (NaN)
         mpox_clean_df = mpox_clean_df.fillna(0)
+
+        # drop les doublons :
+        mpox_clean_df.drop_duplicates(inplace=True)
+
 
     except Exception as e:
         print(f"Erreur lors du traitement des données mpox: {e}")

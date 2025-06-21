@@ -7,7 +7,7 @@ class DLocation(Base):
     """Dimension géographique pour stocker les localisations uniques"""
     __tablename__ = 'd_location'
     
-    location_id = Column(Integer, primary_key=True)
+    location_id = Column(Integer, primary_key=True, autoincrement=True)
     location_name = Column(String(100), nullable=False, unique=True)  # Nom du pays/région
 
 class FCovid(Base):
@@ -41,7 +41,7 @@ class FMpox(Base):
     """Table de faits pour les données MPOX (variole du singe)"""
     __tablename__ = 'f_mpox'
 
-    mpox_fact_id = Column(Integer, primary_key=True)
+    mpox_fact_id = Column(Integer, primary_key=True, autoincrement=True)
     date = Column(Date, nullable=False)
     location_id = Column(Integer, ForeignKey('d_location.location_id'), nullable=False)
 
