@@ -438,7 +438,7 @@ def update_comparison(countries):
                 else:
                     # Essayer des correspondances partielles
                     matching_countries = [c for c in mpox_df[country_col].unique() 
-                                          if country.lower() in c.lower() or c.lower() in country.lower()]
+                                        if country.lower() in c.lower() or c.lower() in country.lower()]
                 
                 if not matching_countries:
                     continue
