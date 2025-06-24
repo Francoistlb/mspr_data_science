@@ -8,7 +8,7 @@ class DLocation(Base):
     __tablename__ = 'd_location'
     
     location_id = Column(Integer, primary_key=True, autoincrement=True)
-    location_name = Column(String(100), nullable=False, unique=True)  # Nom du pays/région
+    location_name = Column(String(100), nullable=False, unique=True)  
 
 class FCovid(Base):
     """Table de faits principale pour les données COVID"""
