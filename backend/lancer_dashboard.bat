@@ -6,5 +6,6 @@ echo.
 echo Lancement du dashboard...
 echo.
 cd /d "%~dp0"
-python launch_dashboard.py
+cd scripts
+python dashboard_final.py
 pause 
