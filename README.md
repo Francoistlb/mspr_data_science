@@ -157,4 +157,80 @@ Les données proviennent du projet Global.health et contiennent :
 
 ## Remarques
 
-Ce projet est à des fins éducatives et d'analyse. Les données sont régulièrement mises à jour par leurs sources respectives. 
+Ce projet est à des fins éducatives et d'analyse. Les données sont régulièrement mises à jour par leurs sources respectives.
+
+## 📊 Dashboard Interactif
+
+### 🚀 Lancement rapide
+```bash
+cd backend
+python launch_dashboard.py
+```
+Puis ouvrez : **http://localhost:8050**
+
+### 📈 Fonctionnalités
+- **4 visuels interactifs** : Évolution COVID, Vaccinés, Mpox, Comparaison
+- **Filtres dynamiques** : Pays et période
+- **Interface moderne** avec Dash et Plotly
+- **Données en temps réel** d'Our World in Data et Kaggle
+
+### 📁 Fichiers du dashboard
+- `backend/dashboard_final.py` - Dashboard principal
+- `backend/launch_dashboard.py` - Script de lancement
+- `backend/requirements_dashboard.txt` - Dépendances
+- `backend/README_FINAL.md` - Documentation détaillée
+
+---
+
+## 🛠️ Installation
+
+### Prérequis
+- Python 3.7+
+- Git
+
+### Installation
+```bash
+git clone [URL_DU_REPO]
+cd mspr_data_science
+pip install -r backend/requirements_dashboard.txt
+```
+
+### Lancement
+```bash
+# Méthode 1 : Script automatique
+cd backend
+python launch_dashboard.py
+
+# Méthode 2 : Double-clic (Windows)
+backend/lancer_dashboard.bat
+```
+
+---
+
+## 👥 Collaboration
+
+### Branches
+- `main` - Code stable
+- `develop` - Développement
+- `feature/*` - Nouvelles fonctionnalités
+
+### Commit convention
+```
+feat: nouvelle fonctionnalité
+fix: correction de bug
+docs: documentation
+style: formatage
+refactor: refactorisation
+test: tests
+```
+
+---
+
+## 📊 Sources de données
+
+- **COVID-19** : Our World in Data
+- **Mpox** : Kaggle Dataset
+
+---
+
+*Projet réalisé par [Noms des membres du groupe]* 

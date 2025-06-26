@@ -1,9 +1,51 @@
-# Fichiers Python
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Environnement virtuel
+# Virtual environments
 venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dash specific
+.dash_debug/
+
+# Data files (optionnel - gardez si vous voulez partager les données)
+# backend/scripts/data/*.csv
+
+# Logs
+*.log
+
+# Cache
+.cache/
 
 # Dotenv
 .env
