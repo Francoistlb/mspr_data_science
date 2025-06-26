@@ -7,6 +7,20 @@ import plotly.graph_objects as go
 from datetime import datetime
 import os
 
+# Dictionnaire de traduction pour les métriques
+METRIC_LABELS = {
+    "total_cases": "Cas totaux",
+    "new_cases": "Nouveaux cas",
+    "total_deaths": "Décès totaux",
+    "new_deaths": "Nouveaux décès",
+    "hosp_patients": "Hospitalisations",
+    "cases": "Cas",
+    "deaths": "Décès"
+}
+
+def metric_label(metric):
+    return METRIC_LABELS.get(metric, metric.replace("_", " ").capitalize())
+
 # Vérifier si les données existent, sinon exécuter l'ETL
 if not os.path.exists('data/covid_processed.csv') or not os.path.exists('data/mpox_processed.csv'):
     print("Les données transformées n'existent pas. Exécution du script ETL...")
@@ -38,14 +52,14 @@ app = dash.Dash(__name__, title="Dashboard COVID-19 et Mpox")
 
 # Layout du dashboard
 app.layout = html.Div([
-    html.H1("Dashboard COVID-19 et Mpox", style={'textAlign': 'center'}),
+    html.H1("Dashboard COVID-19 et Mpox", className="header-title"),
     
     # Sélection des onglets
     dcc.Tabs([
         # Onglet COVID-19
         dcc.Tab(label="COVID-19", children=[
             html.Div([
-                html.H3("Analyse COVID-19", style={'textAlign': 'center'}),
+                html.H3("Analyse COVID-19"),
                 
                 # Filtres
                 html.Div([
@@ -80,37 +94,85 @@ app.layout = html.Div([
                         start_date=covid_df['date'].min(),
                         end_date=covid_df['date'].max()
                     )
-                ], style={'padding': '20px', 'backgroundColor': '#f8f9fa', 'borderRadius': '5px'}),
+                ], className="dash-container"),
                 
-                # Graphiques
+                # Graphiques - Première ligne
                 html.Div([
-                    dcc.Graph(id='covid-line-chart'),
-                    dcc.Graph(id='covid-bar-chart')
-                ]),
+                    # Évolution temporelle
+                    html.Div([
+                        dcc.Graph(id='covid-line-chart')
+                    ], style={'flex': '1', 'marginRight': '10px'}),
+                    
+                    # Dernières valeurs
+                    html.Div([
+                        dcc.Graph(id='covid-bar-chart')
+                    ], style={'flex': '1', 'marginLeft': '10px'})
+                ], style={'display': 'flex', 'marginBottom': '20px'}),
+                
+                # Graphiques - Deuxième ligne
+                html.Div([
+                    # Carte mondiale
+                    html.Div([
+                        dcc.Graph(id='covid-map')
+                    ], style={'flex': '1', 'marginRight': '10px'}),
+                    
+                    # Barres par pays (comparaison)
+                    html.Div([
+                        dcc.Graph(id='covid-comparison-bars')
+                    ], style={'flex': '1', 'marginLeft': '10px'})
+                ], style={'display': 'flex', 'marginBottom': '20px'}),
                 
                 # Statistiques
-                html.Div(id='covid-stats', style={'padding': '20px', 'backgroundColor': '#f8f9fa', 'borderRadius': '5px', 'marginTop': '20px'})
+                html.Div(id='covid-stats', className="dash-container")
             ])
         ]),
         
         # Onglet Mpox
         dcc.Tab(label="Mpox", children=[
             html.Div([
-                html.H3("Analyse Mpox", style={'textAlign': 'center'}),
+                html.H3("Analyse Mpox"),
                 
                 # Message si les données ne sont pas disponibles
                 html.Div(id='mpox-data-status'),
                 
-                # Contenu conditionnel basé sur la disponibilité des données
-                html.Div(id='mpox-content')
+                # Filtres (conditionnels selon disponibilité des données)
+                html.Div(id='mpox-filters', className="dash-container"),
+                
+                # Graphiques - Première ligne
+                html.Div([
+                    # Évolution temporelle
+                    html.Div([
+                        dcc.Graph(id='mpox-line-chart')
+                    ], style={'flex': '1', 'marginRight': '10px'}),
+                    
+                    # Dernières valeurs
+                    html.Div([
+                        dcc.Graph(id='mpox-bar-chart')
+                    ], style={'flex': '1', 'marginLeft': '10px'})
+                ], style={'display': 'flex', 'marginBottom': '20px'}),
+                
+                # Graphiques - Deuxième ligne
+                html.Div([
+                    # Carte mondiale
+                    html.Div([
+                        dcc.Graph(id='mpox-map')
+                    ], style={'flex': '1', 'marginRight': '10px'}),
+                    
+                    # Barres par pays (comparaison)
+                    html.Div([
+                        dcc.Graph(id='mpox-comparison-bars')
+                    ], style={'flex': '1', 'marginLeft': '10px'})
+                ], style={'display': 'flex', 'marginBottom': '20px'}),
+                
+                # Statistiques
+                html.Div(id='mpox-stats', className="dash-container")
             ])
         ]),
         
         # Onglet Comparatif
         dcc.Tab(label="Comparaison", children=[
             html.Div([
-                html.H3("Comparaison COVID-19 vs Mpox", style={'textAlign': 'center'}),
-                
+                html.H3("Comparaison COVID-19 vs Mpox"),
                 html.Div([
                     html.Label("Sélectionner des pays:"),
                     dcc.Dropdown(
@@ -119,11 +181,28 @@ app.layout = html.Div([
                                 for country in sorted(covid_df['location'].unique())],
                         value=['France', 'United States', 'Germany'],
                         multi=True
-                    )
-                ], style={'padding': '20px', 'backgroundColor': '#f8f9fa', 'borderRadius': '5px'}),
-                
-                # Graphique comparatif
-                dcc.Graph(id='comparison-chart')
+                    ),
+                    html.Label("Sélectionner une métrique:"),
+                    dcc.RadioItems(
+                        id='compare-metric-radio',
+                        options=[
+                            {'label': metric_label('total_cases'), 'value': 'total_cases'},
+                            {'label': metric_label('new_cases'), 'value': 'new_cases'},
+                            {'label': metric_label('total_deaths'), 'value': 'total_deaths'},
+                            {'label': metric_label('new_deaths'), 'value': 'new_deaths'}
+                        ],
+                        value='total_cases',
+                        labelStyle={'display': 'inline-block', 'marginRight': '10px'}
+                    ),
+                ], className="dash-container"),
+                # Graphiques
+                html.Div([
+                    dcc.Graph(id='comparison-curve'),
+                ], className="dash-container"),
+                html.Div([
+                    dcc.Graph(id='comparison-bar'),
+                ], className="dash-container"),
+                html.Div(id='comparison-summary', className="dash-container")
             ])
         ])
     ])
@@ -133,6 +212,8 @@ app.layout = html.Div([
 @app.callback(
     [Output('covid-line-chart', 'figure'),
      Output('covid-bar-chart', 'figure'),
+     Output('covid-map', 'figure'),
+     Output('covid-comparison-bars', 'figure'),
      Output('covid-stats', 'children')],
     [Input('covid-country-dropdown', 'value'),
      Input('covid-metric-radio', 'value'),
@@ -153,8 +234,9 @@ def update_covid_graphs(countries, metric, start_date, end_date):
         x='date', 
         y=metric,
         color='location',
-        title=f"Évolution de {metric.replace('_', ' ')} par pays"
+        title=f"Évolution de {metric_label(metric)} par pays"
     )
+    line_fig.update_layout(plot_bgcolor='white', paper_bgcolor='white')
     
     # Graphique à barres des dernières valeurs
     latest_data = filtered_df.sort_values('date').groupby('location').last().reset_index()
@@ -162,9 +244,34 @@ def update_covid_graphs(countries, metric, start_date, end_date):
         latest_data, 
         x='location', 
         y=metric,
-        title=f"Dernières valeurs de {metric.replace('_', ' ')} par pays",
+        title=f"Dernières valeurs de {metric_label(metric)} par pays",
         color='location'
     )
+    bar_fig.update_layout(plot_bgcolor='white', paper_bgcolor='white')
+    
+    # Carte mondiale
+    map_data = latest_data.copy()
+    map_fig = px.choropleth(
+        map_data,
+        locations='location',
+        locationmode='country names',
+        color=metric,
+        title=f'Distribution mondiale de {metric_label(metric)}',
+        color_continuous_scale='Viridis'
+    )
+    map_fig.update_layout(plot_bgcolor='white', paper_bgcolor='white')
+    
+    # Barres de comparaison (tous les pays)
+    all_countries_data = covid_df.sort_values('date').groupby('location').last().reset_index()
+    comparison_fig = px.bar(
+        all_countries_data.sort_values(metric, ascending=False).head(20),
+        x='location',
+        y=metric,
+        title=f'Top 20 des pays par {metric_label(metric)}',
+        color=metric,
+        color_continuous_scale='Blues'
+    )
+    comparison_fig.update_layout(plot_bgcolor='white', paper_bgcolor='white')
     
     # Statistiques
     stats = []
@@ -176,23 +283,23 @@ def update_covid_graphs(countries, metric, start_date, end_date):
             max_value = country_data[metric].max()
             stats.append(html.Div([
                 html.H4(country),
-                html.P(f"Dernière valeur de {metric.replace('_', ' ')}: {latest_value:,.0f}"),
+                html.P(f"Dernière valeur de {metric_label(metric)}: {latest_value:,.0f}"),
                 html.P(f"Valeur maximale: {max_value:,.0f}")
             ]))
     
-    return line_fig, bar_fig, stats
+    return line_fig, bar_fig, map_fig, comparison_fig, stats
 
-# Callback pour vérifier la disponibilité des données Mpox
+# Callback pour vérifier la disponibilité des données Mpox et générer les filtres
 @app.callback(
     [Output('mpox-data-status', 'children'),
-     Output('mpox-content', 'children')],
+     Output('mpox-filters', 'children')],
     [Input('mpox-data-status', 'id')]  # Dummy input pour déclencher le callback au chargement
 )
 def check_mpox_data(_):
     if mpox_df is None or mpox_df.empty:
         return (
             html.Div([
-                html.H4("Données Mpox non disponibles", style={'color': 'red'}),
+                html.H4("Données Mpox non disponibles", className="status-error"),
                 html.P("Les données mpox n'ont pas pu être chargées. Veuillez exécuter le script ETL.")
             ]),
             None
@@ -208,298 +315,261 @@ def check_mpox_data(_):
     if country_col is None:
         return (
             html.Div([
-                html.H4("Structure des données Mpox non reconnue", style={'color': 'orange'}),
+                html.H4("Structure des données Mpox non reconnue", className="status-warning"),
                 html.P("Le format des données mpox est différent de celui attendu.")
             ]),
-            html.Div([
-                html.P("Colonnes disponibles:"),
-                html.Code(", ".join(mpox_df.columns.tolist())),
-                dcc.Graph(
-                    figure=px.bar(
-                        mpox_df.iloc[:, 0].value_counts().reset_index(),
-                        x='index',
-                        y='count',
-                        title="Distribution par première colonne"
-                    )
-                )
-            ])
+            None
         )
     
     # Préparation des filtres pour les métriques
-    metric_filter = None
-    if 'total_cases' in mpox_df.columns and 'new_cases' in mpox_df.columns:
-        metric_filter = html.Div([
-            html.Label("Sélectionner une métrique:"),
-            dcc.RadioItems(
-                id='mpox-metric-radio',
-                options=[
-                    {'label': 'Cas totaux', 'value': 'total_cases'},
-                    {'label': 'Nouveaux cas', 'value': 'new_cases'}
-                ],
-                value='total_cases',
-                labelStyle={'display': 'inline-block', 'marginRight': '10px'}
-            )
-        ])
+    metric_options = []
+    if 'total_cases' in mpox_df.columns:
+        metric_options.append({'label': 'Cas totaux', 'value': 'total_cases'})
+    if 'new_cases' in mpox_df.columns:
+        metric_options.append({'label': 'Nouveaux cas', 'value': 'new_cases'})
+    if 'total_deaths' in mpox_df.columns:
+        metric_options.append({'label': 'Décès totaux', 'value': 'total_deaths'})
+    if 'new_deaths' in mpox_df.columns:
+        metric_options.append({'label': 'Nouveaux décès', 'value': 'new_deaths'})
     
-    # Préparation du graphique temporel
-    time_chart = None
-    if date_col:
-        time_chart = dcc.Graph(id='mpox-time-chart')
+    if not metric_options:
+        metric_options = [{'label': 'Cas', 'value': 'cases'}]
     
-    # Interface pour les données mpox
-    mpox_content = html.Div([
-        # Filtres
-        html.Div([
-            html.Label("Sélectionner des pays:"),
-            dcc.Dropdown(
-                id='mpox-country-dropdown',
-                options=[{'label': country, 'value': country} 
-                        for country in sorted(mpox_df[country_col].unique())],
-                value=mpox_df[country_col].value_counts().nlargest(5).index.tolist(),
-                multi=True
-            ),
-            
-            # Ajouter le filtre de métrique s'il est disponible
-            metric_filter if metric_filter else None
-        ], style={'padding': '20px', 'backgroundColor': '#f8f9fa', 'borderRadius': '5px'}),
+    # Interface pour les filtres mpox
+    mpox_filters = html.Div([
+        html.Label("Sélectionner des pays:"),
+        dcc.Dropdown(
+            id='mpox-country-dropdown',
+            options=[{'label': country, 'value': country} 
+                    for country in sorted(mpox_df[country_col].unique())],
+            value=mpox_df[country_col].value_counts().nlargest(5).index.tolist(),
+            multi=True
+        ),
         
-        # Graphiques
-        dcc.Graph(id='mpox-map'),
-        dcc.Graph(id='mpox-bar-chart'),
+        html.Label("Sélectionner une métrique:"),
+        dcc.RadioItems(
+            id='mpox-metric-radio',
+            options=metric_options,
+            value=metric_options[0]['value'],
+            labelStyle={'display': 'inline-block', 'marginRight': '10px'}
+        ),
         
-        # Ajouter le graphique temporel s'il est disponible
-        time_chart if time_chart else None
+        html.Label("Plage de dates:"),
+        dcc.DatePickerRange(
+            id='mpox-date-picker',
+            min_date_allowed=mpox_df[date_col].min() if date_col else None,
+            max_date_allowed=mpox_df[date_col].max() if date_col else None,
+            start_date=mpox_df[date_col].min() if date_col else None,
+            end_date=mpox_df[date_col].max() if date_col else None
+        )
     ])
     
-    return html.Div([
-        html.H4("Données Mpox disponibles", style={'color': 'green'})
-    ]), mpox_content
+    return None, mpox_filters
 
-# Callback pour les graphiques Mpox
+# Callback pour les graphiques Mpox harmonisés
 @app.callback(
-    [Output('mpox-map', 'figure'),
-     Output('mpox-bar-chart', 'figure')],
-    [Input('mpox-country-dropdown', 'value')]
+    [Output('mpox-line-chart', 'figure'),
+     Output('mpox-bar-chart', 'figure'),
+     Output('mpox-map', 'figure'),
+     Output('mpox-comparison-bars', 'figure'),
+     Output('mpox-stats', 'children')],
+    [Input('mpox-country-dropdown', 'value'),
+     Input('mpox-metric-radio', 'value'),
+     Input('mpox-date-picker', 'start_date'),
+     Input('mpox-date-picker', 'end_date')]
 )
-def update_mpox_graphs(countries):
+def update_mpox_graphs(countries, metric, start_date, end_date):
     if mpox_df is None or mpox_df.empty:
         empty_fig = go.Figure()
         empty_fig.update_layout(title="Aucune donnée disponible")
-        return empty_fig, empty_fig
-    
-    # Identifier les colonnes clés
-    country_col = next((col for col in mpox_df.columns if col.lower() in ['country', 'location'] or 'country' in col.lower() or 'nation' in col.lower()), None)
-    case_col = next((col for col in mpox_df.columns if col.lower() in ['cases', 'total_cases'] or 'case' in col.lower()), None)
-    
-    if country_col is None:
-        empty_fig = go.Figure()
-        empty_fig.update_layout(title="Données non structurées")
-        return empty_fig, empty_fig
-    
-    # Agréger les données par pays
-    if case_col:
-        # Utiliser la colonne de cas existante
-        country_counts = mpox_df.groupby(country_col)[case_col].sum().reset_index()
-        country_counts.columns = ['Country', 'Cases']
-    else:
-        # Compter le nombre d'occurrences
-        country_counts = mpox_df[country_col].value_counts().reset_index()
-        country_counts.columns = ['Country', 'Cases']
-    
-    # Filtrer par pays sélectionnés si spécifié
-    if countries and len(countries) > 0:
-        filtered_counts = country_counts[country_counts['Country'].isin(countries)]
-    else:
-        filtered_counts = country_counts.head(10)
-    
-    # Carte choroplèthe
-    map_fig = px.choropleth(
-        country_counts,
-        locations='Country',
-        locationmode='country names',
-        color='Cases',
-        title='Distribution mondiale des cas de Mpox',
-        color_continuous_scale='Viridis'
-    )
-    
-    # Graphique à barres
-    bar_fig = px.bar(
-        filtered_counts.sort_values('Cases', ascending=False),
-        x='Country',
-        y='Cases',
-        title='Nombre de cas de Mpox par pays',
-        color='Country'
-    )
-    
-    return map_fig, bar_fig
-
-# Callback pour le graphique d'évolution temporelle mpox (si présent)
-@app.callback(
-    Output('mpox-time-chart', 'figure'),
-    [Input('mpox-country-dropdown', 'value')]
-)
-def update_mpox_time_chart(countries):
-    # Si le callback est appelé mais que le graphique n'existe pas dans le layout,
-    # Dash va ignorer silencieusement le callback
-    if mpox_df is None or mpox_df.empty:
-        empty_fig = go.Figure()
-        empty_fig.update_layout(title="Aucune donnée disponible")
-        return empty_fig
+        return empty_fig, empty_fig, empty_fig, empty_fig, []
     
     # Identifier les colonnes clés
     country_col = next((col for col in mpox_df.columns if col.lower() in ['country', 'location'] or 'country' in col.lower() or 'nation' in col.lower()), None)
     date_col = next((col for col in mpox_df.columns if col.lower() in ['date_confirmation', 'date'] or 'date' in col.lower()), None)
-    case_col = next((col for col in mpox_df.columns if col.lower() in ['cases', 'total_cases'] or 'case' in col.lower()), None)
     
-    if country_col is None or date_col is None:
+    if country_col is None:
         empty_fig = go.Figure()
-        empty_fig.update_layout(title="Données temporelles non disponibles")
-        return empty_fig
+        empty_fig.update_layout(title="Données non structurées")
+        return empty_fig, empty_fig, empty_fig, empty_fig, []
     
-    time_fig = go.Figure()
+    # Filtrer les données
+    filtered_df = mpox_df[mpox_df[country_col].isin(countries)]
+    if date_col and start_date and end_date:
+        filtered_df = filtered_df[
+            (filtered_df[date_col] >= start_date) & 
+            (filtered_df[date_col] <= end_date)
+        ]
     
-    # Si aucun pays n'est sélectionné, prendre les 5 premiers pays
-    if not countries or len(countries) == 0:
-        countries = mpox_df[country_col].value_counts().nlargest(5).index.tolist()
+    if filtered_df.empty:
+        empty_fig = go.Figure()
+        empty_fig.update_layout(title="Aucune donnée disponible pour les filtres sélectionnés")
+        return empty_fig, empty_fig, empty_fig, empty_fig, []
     
+    # 1. Évolution temporelle
+    if date_col and metric in filtered_df.columns:
+        line_fig = px.line(
+            filtered_df,
+            x=date_col,
+            y=metric,
+            color=country_col,
+            title=f"Évolution de {metric_label(metric)} par pays"
+        )
+        line_fig.update_layout(plot_bgcolor='white', paper_bgcolor='white')
+    else:
+        line_fig = go.Figure()
+        line_fig.update_layout(title="Données temporelles non disponibles")
+    
+    # 2. Dernières valeurs par pays
+    if metric in filtered_df.columns:
+        latest_data = filtered_df.sort_values(date_col if date_col else country_col).groupby(country_col)[metric].last().reset_index()
+        bar_fig = px.bar(
+            latest_data,
+            x=country_col,
+            y=metric,
+            title=f"Dernières valeurs de {metric_label(metric)} par pays",
+            color=country_col
+        )
+        bar_fig.update_layout(plot_bgcolor='white', paper_bgcolor='white')
+    else:
+        bar_fig = go.Figure()
+        bar_fig.update_layout(title="Métrique non disponible")
+    
+    # 3. Carte mondiale
+    if metric in filtered_df.columns:
+        map_data = latest_data if 'latest_data' in locals() else filtered_df.groupby(country_col)[metric].sum().reset_index()
+        map_fig = px.choropleth(
+            map_data,
+            locations=country_col,
+            locationmode='country names',
+            color=metric,
+            title=f'Distribution mondiale de {metric_label(metric)}',
+            color_continuous_scale='Viridis'
+        )
+        map_fig.update_layout(plot_bgcolor='white', paper_bgcolor='white')
+    else:
+        map_fig = go.Figure()
+        map_fig.update_layout(title="Carte non disponible")
+    
+    # 4. Barres de comparaison (tous les pays)
+    all_countries_data = mpox_df.groupby(country_col)[metric].sum().reset_index() if metric in mpox_df.columns else mpox_df[country_col].value_counts().reset_index()
+    if metric in mpox_df.columns:
+        comparison_fig = px.bar(
+            all_countries_data.sort_values(metric, ascending=False).head(20),
+            x=country_col,
+            y=metric,
+            title=f'Top 20 des pays par {metric_label(metric)}',
+            color=metric,
+            color_continuous_scale='Reds'
+        )
+    else:
+        comparison_fig = px.bar(
+            all_countries_data.head(20),
+            x=country_col,
+            y='count',
+            title='Top 20 des pays par nombre de cas',
+            color='count',
+            color_continuous_scale='Reds'
+        )
+    comparison_fig.update_layout(plot_bgcolor='white', paper_bgcolor='white')
+    
+    # 5. Statistiques
+    stats = []
     for country in countries:
-        country_data = mpox_df[mpox_df[country_col] == country]
-        if not country_data.empty:
-            # Trier par date
-            country_data = country_data.sort_values(date_col)
-            
-            # Sélectionner la colonne à afficher
-            y_col = case_col if case_col else 'cases'
-            if y_col not in country_data.columns and 'total_cases' in country_data.columns:
-                y_col = 'total_cases'
-            elif y_col not in country_data.columns and 'new_cases' in country_data.columns:
-                # Calculer le cumulatif des nouveaux cas
-                country_data = country_data.sort_values(date_col)
-                country_data['cumulative_cases'] = country_data['new_cases'].cumsum()
-                y_col = 'cumulative_cases'
-            
-            if y_col in country_data.columns:
-                time_fig.add_trace(go.Scatter(
-                    x=country_data[date_col],
-                    y=country_data[y_col],
-                    mode='lines',
-                    name=country
-                ))
+        country_data = filtered_df[filtered_df[country_col] == country]
+        if not country_data.empty and metric in country_data.columns:
+            latest_value = country_data.sort_values(date_col if date_col else country_col).iloc[-1][metric]
+            max_value = country_data[metric].max()
+            stats.append(html.Div([
+                html.H4(country),
+                html.P(f"Dernière valeur de {metric_label(metric)}: {latest_value:,.0f}"),
+                html.P(f"Valeur maximale: {max_value:,.0f}")
+            ]))
     
-    time_fig.update_layout(
-        title='Évolution des cas de Mpox par pays',
-        xaxis_title='Date',
-        yaxis_title='Nombre de cas',
-        template='plotly_white'
-    )
-    
-    return time_fig
+    return line_fig, bar_fig, map_fig, comparison_fig, stats
 
 # Callback pour la comparaison
 @app.callback(
-    Output('comparison-chart', 'figure'),
-    [Input('compare-country-dropdown', 'value')]
+    [Output('comparison-curve', 'figure'),
+     Output('comparison-bar', 'figure'),
+     Output('comparison-summary', 'children')],
+    [Input('compare-country-dropdown', 'value'),
+     Input('compare-metric-radio', 'value')]
 )
-def update_comparison(countries):
-    # Créer un graphique comparatif entre COVID-19 et Mpox
-    
+def update_comparison(countries, metric):
+    # Courbe d'évolution
     fig = go.Figure()
-    
-    # Si aucun pays n'est sélectionné, utiliser quelques pays par défaut
-    if not countries or len(countries) == 0:
-        countries = ['France', 'United States', 'Germany']
-    
-    # Ajouter les données COVID
     for country in countries:
         country_data = covid_df[covid_df['location'] == country]
-        if not country_data.empty:
+        if not country_data.empty and metric in country_data.columns:
             fig.add_trace(go.Scatter(
                 x=country_data['date'],
-                y=country_data['total_cases'],
+                y=country_data[metric],
                 mode='lines',
                 name=f"{country} - COVID-19"
             ))
-    
-    # Ajouter les données Mpox si disponibles
     if mpox_df is not None and not mpox_df.empty:
-        # Identifier les colonnes clés
         country_col = next((col for col in mpox_df.columns if col.lower() in ['country', 'location'] or 'country' in col.lower() or 'nation' in col.lower()), None)
         date_col = next((col for col in mpox_df.columns if col.lower() in ['date_confirmation', 'date'] or 'date' in col.lower()), None)
-        case_col = next((col for col in mpox_df.columns if col.lower() in ['cases', 'total_cases'] or 'case' in col.lower()), None)
-        
-        if country_col is not None and date_col is not None:
+        if country_col and date_col and metric in mpox_df.columns:
             for country in countries:
-                # Filtrer les données par pays
-                matching_countries = []
-                
-                # Correspondance exacte
-                if country in mpox_df[country_col].values:
-                    matching_countries = [country]
-                else:
-                    # Essayer des correspondances partielles
-                    matching_countries = [c for c in mpox_df[country_col].unique() 
-                                        if country.lower() in c.lower() or c.lower() in country.lower()]
-                
-                if not matching_countries:
-                    continue
-                    
-                for match_country in matching_countries[:1]:  # Limiter à une correspondance
+                for match_country in [c for c in mpox_df[country_col].unique() if country.lower() in c.lower() or c.lower() in country.lower()]:
                     country_data = mpox_df[mpox_df[country_col] == match_country]
-                    if country_data.empty:
-                        continue
-                        
-                    # Sélectionner et préparer les données pour le graphique
-                    try:
-                        # Trier par date
-                        country_data = country_data.sort_values(date_col)
-                        
-                        # Sélectionner la colonne de cas appropriée
-                        if case_col and case_col in country_data.columns:
-                            y_values = country_data[case_col]
-                        elif 'total_cases' in country_data.columns:
-                            y_values = country_data['total_cases']
-                        elif 'new_cases' in country_data.columns:
-                            # Calculer le cumulatif
-                            y_values = country_data['new_cases'].cumsum()
-                        else:
-                            # Compter par date
-                            date_counts = country_data.groupby(date_col).size()
-                            dates = date_counts.index
-                            y_values = date_counts.values
-                            
-                            fig.add_trace(go.Scatter(
-                                x=dates,
-                                y=y_values,
-                                mode='lines',
-                                name=f"{country} - Mpox",
-                                line=dict(dash='dash')
-                            ))
-                            continue
-                        
-                        # Ajouter la trace avec les valeurs calculées
+                    if not country_data.empty:
                         fig.add_trace(go.Scatter(
                             x=country_data[date_col],
-                            y=y_values,
+                            y=country_data[metric],
                             mode='lines',
                             name=f"{country} - Mpox",
                             line=dict(dash='dash')
                         ))
-                        
-                    except Exception as e:
-                        print(f"Erreur lors de l'ajout des données mpox pour {country}: {e}")
-    
     fig.update_layout(
-        title='Comparaison COVID-19 vs Mpox par pays',
-        xaxis_title='Date',
-        yaxis_title='Nombre de cas',
-        legend_title='Pays et maladie',
-        template='plotly_white'
+        title=f"Comparaison {metric_label(metric)} COVID-19 vs Mpox par pays",
+        xaxis_title="Date",
+        yaxis_title=metric_label(metric),
+        legend_title="Pays et maladie",
+        template='plotly_white',
+        yaxis_type='log'
     )
-    
-    # Utiliser une échelle logarithmique pour mieux voir les deux maladies
-    fig.update_yaxes(type='log')
-    
-    return fig
+
+    # Barres comparatives
+    bar_data = []
+    for country in countries:
+        covid_val = covid_df[covid_df['location'] == country][metric].max() if not covid_df[covid_df['location'] == country].empty and metric in covid_df.columns else 0
+        mpox_val = 0
+        if mpox_df is not None and not mpox_df.empty:
+            country_col = next((col for col in mpox_df.columns if col.lower() in ['country', 'location'] or 'country' in col.lower() or 'nation' in col.lower()), None)
+            if country_col and metric in mpox_df.columns:
+                for match_country in [c for c in mpox_df[country_col].unique() if country.lower() in c.lower() or c.lower() in country.lower()]:
+                    mpox_val = mpox_df[mpox_df[country_col] == match_country][metric].max()
+                    break
+        bar_data.append({'Pays': country, 'COVID-19': covid_val, 'Mpox': mpox_val})
+    bar_fig = go.Figure(data=[
+        go.Bar(name='COVID-19', x=[d['Pays'] for d in bar_data], y=[d['COVID-19'] for d in bar_data]),
+        go.Bar(name='Mpox', x=[d['Pays'] for d in bar_data], y=[d['Mpox'] for d in bar_data])
+    ])
+    bar_fig.update_layout(
+        barmode='group',
+        title=f"Comparatif {metric_label(metric)} COVID-19 vs Mpox par pays",
+        yaxis_title=metric_label(metric),
+        template='plotly_white',
+        yaxis_type='log'
+    )
+    bar_fig.update_traces(texttemplate='%{y:.0f}', textposition='outside')
+
+    # Résumé
+    summary = html.Table([
+        html.Thead(html.Tr([html.Th("Pays"), html.Th("COVID-19"), html.Th("Mpox")])),
+        html.Tbody([
+            html.Tr([
+                html.Td(d['Pays']),
+                html.Td(f"{d['COVID-19']:,}".replace(',', ' ')),
+                html.Td(f"{d['Mpox']:,}".replace(',', ' '))
+            ]) for d in bar_data
+        ])
+    ], style={'width': '100%', 'marginTop': '20px', 'textAlign': 'center'})
+
+    return fig, bar_fig, summary
 
 # Lancement de l'application
 if __name__ == '__main__':
