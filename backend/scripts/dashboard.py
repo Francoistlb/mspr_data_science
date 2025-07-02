@@ -7,6 +7,10 @@ import plotly.graph_objects as go
 from datetime import datetime
 import os
 
+# Palette de couleurs universelle pour l'accessibilité daltoniens (Color Universal Design)
+CUD_PALETTE = ['#E69F00', '#56B4E9', '#009E73', '#F0E442',
+               '#0072B2', '#D55E00', '#CC79A7', '#999999']
+
 # Dictionnaire de traduction pour les métriques
 METRIC_LABELS = {
     "total_cases": "Cas totaux",
@@ -49,6 +53,11 @@ except Exception as e:
 
 # Initialisation de l'application Dash
 app = dash.Dash(__name__, title="Dashboard COVID-19 et Mpox")
+
+# Ajout de la responsivité via CSS (Dash gère déjà le responsive, mais on peut forcer quelques styles)
+app.css.append_css({
+    "external_url": "https://codepen.io/chriddyp/pen/bWLwgP.css"
+})
 
 # Layout du dashboard
 app.layout = html.Div([
@@ -234,7 +243,8 @@ def update_covid_graphs(countries, metric, start_date, end_date):
         x='date', 
         y=metric,
         color='location',
-        title=f"Évolution de {metric_label(metric)} par pays"
+        title=f"Évolution de {metric_label(metric)} par pays",
+        color_discrete_sequence=CUD_PALETTE
     )
     line_fig.update_layout(plot_bgcolor='white', paper_bgcolor='white')
     
@@ -245,7 +255,8 @@ def update_covid_graphs(countries, metric, start_date, end_date):
         x='location', 
         y=metric,
         title=f"Dernières valeurs de {metric_label(metric)} par pays",
-        color='location'
+        color='location',
+        color_discrete_sequence=CUD_PALETTE
     )
     bar_fig.update_layout(plot_bgcolor='white', paper_bgcolor='white')
     
@@ -268,8 +279,8 @@ def update_covid_graphs(countries, metric, start_date, end_date):
         x='location',
         y=metric,
         title=f'Top 20 des pays par {metric_label(metric)}',
-        color=metric,
-        color_continuous_scale='Blues'
+        color='location',
+        color_discrete_sequence=CUD_PALETTE
     )
     comparison_fig.update_layout(plot_bgcolor='white', paper_bgcolor='white')
     
@@ -413,7 +424,8 @@ def update_mpox_graphs(countries, metric, start_date, end_date):
             x=date_col,
             y=metric,
             color=country_col,
-            title=f"Évolution de {metric_label(metric)} par pays"
+            title=f"Évolution de {metric_label(metric)} par pays",
+            color_discrete_sequence=CUD_PALETTE
         )
         line_fig.update_layout(plot_bgcolor='white', paper_bgcolor='white')
     else:
@@ -428,7 +440,8 @@ def update_mpox_graphs(countries, metric, start_date, end_date):
             x=country_col,
             y=metric,
             title=f"Dernières valeurs de {metric_label(metric)} par pays",
-            color=country_col
+            color=country_col,
+            color_discrete_sequence=CUD_PALETTE
         )
         bar_fig.update_layout(plot_bgcolor='white', paper_bgcolor='white')
     else:
@@ -459,8 +472,8 @@ def update_mpox_graphs(countries, metric, start_date, end_date):
             x=country_col,
             y=metric,
             title=f'Top 20 des pays par {metric_label(metric)}',
-            color=metric,
-            color_continuous_scale='Reds'
+            color=country_col,
+            color_discrete_sequence=CUD_PALETTE
         )
     else:
         comparison_fig = px.bar(
@@ -469,7 +482,7 @@ def update_mpox_graphs(countries, metric, start_date, end_date):
             y='count',
             title='Top 20 des pays par nombre de cas',
             color='count',
-            color_continuous_scale='Reds'
+            color_discrete_sequence=CUD_PALETTE
         )
     comparison_fig.update_layout(plot_bgcolor='white', paper_bgcolor='white')
     
@@ -506,7 +519,8 @@ def update_comparison(countries, metric):
                 x=country_data['date'],
                 y=country_data[metric],
                 mode='lines',
-                name=f"{country} - COVID-19"
+                name=f"{country} - COVID-19",
+                line=dict(color=CUD_PALETTE[i % len(CUD_PALETTE)])
             ))
     if mpox_df is not None and not mpox_df.empty:
         country_col = next((col for col in mpox_df.columns if col.lower() in ['country', 'location'] or 'country' in col.lower() or 'nation' in col.lower()), None)
@@ -590,4 +604,4 @@ else:
     print("Structure des données COVID:")
     print(f"Colonnes: {covid_df.columns.tolist()}")
     print(f"Nombre de lignes: {len(covid_df)}")
-    print(f"Premières lignes: \n{covid_df.head(2)}") 
+    print(f"Premières lignes: \n{covid_df.head(2)}")
