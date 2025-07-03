@@ -353,9 +353,10 @@ def check_mpox_data(_):
             id='mpox-country-dropdown',
             options=[{'label': country, 'value': country} 
                     for country in sorted(mpox_df[country_col].unique())],
-            value=mpox_df[country_col].value_counts().nlargest(5).index.tolist(),
+            value=[country for country in ['France', 'United States', 'Germany', 'China', 'Brazil'] if country in mpox_df[country_col].unique()],
             multi=True
         ),
+
         
         html.Label("Sélectionner une métrique:"),
         dcc.RadioItems(
