@@ -512,7 +512,7 @@ def update_mpox_graphs(countries, metric, start_date, end_date):
 def update_comparison(countries, metric):
     # Courbe d'évolution
     fig = go.Figure()
-    for country in countries:
+    for i, country in enumerate(countries):
         country_data = covid_df[covid_df['location'] == country]
         if not country_data.empty and metric in country_data.columns:
             fig.add_trace(go.Scatter(
